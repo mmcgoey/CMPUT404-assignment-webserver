@@ -25,7 +25,7 @@ examples thus some of the code is Copyright © 2001-2013 Python
 Software Foundation; All Rights Reserved under the PSF license (GPL
 compatible) http://docs.python.org/2/library/socketserver.html
 
-I did not use any other source code in this assignment in this assignment
+I did not use any other source code in this assignment 
 
 Collaboration: 
 I discussed this assignment with Aaron Skiba. I confirm that we did not share any code related to the assignment and did not violate the collaboration policy
