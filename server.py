@@ -1,7 +1,12 @@
 #  coding: utf-8 
+from cgitb import html
 import socketserver
+import os
+from pathlib import Path
+import codecs
+from datetime import date, datetime
 
-# Copyright 2013 Abram Hindle, Eddie Antonio Santos
+# Copyright 2022 Abram Hindle, Eddie Antonio Santos, Mark McGoey
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,11 +33,140 @@ import socketserver
 
 
 class MyWebServer(socketserver.BaseRequestHandler):
+    def get_html(self,filetype):
+        try:
+            directory = os.getcwd()
+
+            current_directory = os.getcwd()
+
+            now = datetime.now()
+
+            current_date = now.strftime("%A %d, %m %Y %H:%M:%S GMT")
+            
+            
+            
+            # if the request ask for the root directory then go to index.html
+            if filetype == '/':
+                filetype = '/index.html'
+            
+            
+            if os.path.exists(directory +'/www'):
+                directory = directory + '/www' +str(filetype)
+            else:
+                print("The directory www does not exist")
+            
+            
+
+            
+            # adding index.html to path if the path ends with /
+            if directory[len(directory)-1] == '/':
+                
+                directory += 'index.html'
+
+                # removing any unallowed characters using normpath
+                directory = os.path.normpath(directory)
+                
+            else:
+                # removing any unallowed characters
+                directory = os.path.normpath(directory)
+                
+            # normpath may seperate the path into two parts so I am adding the seperated part to the original path
+            if current_directory not in directory:
+                current_directory += directory
+                directory = current_directory
+
+            
+            
+
+
+            if ('.css' not in directory) and  ('.html' not in directory) and (directory[len(directory)-1] != '/') and (os.path.exists(directory)) and os.path.isdir(directory):
+
+                
+                directory += '/index.html'
+
+                location = 'http://127.0.0.1:8080' + filetype +"/"
+                
+                response = 'HTTP/1.1 301 Moved Permanently\r\nServer: Marks server\r\nDate: %s\r\nConnection: keep-alive\r\nLocation: %s\r\n\r\n'%(current_date,location)
+                
+                
+                
+                self.request.sendall(response.encode())
+
+            
+            
+           
+            file_read = codecs.open(directory,"r","utf-8")
+            
+            content = file_read.read()
+            
+            file_read.close()
+
+            file_size = os.path.getsize(directory)
+
+            
+            if '.css' in directory:
+                
+                
+                
+                
+                response2 = 'HTTP/1.1 200 OK\r\nServer: Marks server\r\nConnection: keep-alive\r\nContent-Type: text/css; charset=UTF-8\r\nDate:%s\r\nContent-Length: %d\r\n\r\n'%(current_date,file_size) + content
+
+                
+                self.request.sendall(bytearray(response2,'utf-8'))    
+            elif '.html' in directory:
+                
+                
+                response2 = 'HTTP/1.1 200 OK\r\nServer: Marks server\r\nConnection: keep-alive\r\nContent-Type: text/html; charset=UTF-8\r\nDate:%s\r\nContent-Length: %d\r\n\r\n'%(current_date,file_size) + content
+                
+                self.request.sendall(bytearray(response2,'utf-8'))    
+            else:
+                
+                response2 =  'HTTP/1.1 200 OK\r\nServer: Marks server\r\nConnection: keep-alive\r\n\r\n' + content
+
+                self.request.sendall(bytearray(response2,'utf-8'))
+                   
+        except FileNotFoundError:
+            
+            if '.css' in directory:
+                response2 = 'HTTP/1.1 404 Not FOUND!\r\nServer: Marks server\r\nConnection: close\r\nContent-Type: text/css\r\nDate: %s\r\n\r\n'%(current_date)
+            elif '.html' in directory:
+                response2 = 'HTTP/1.1 404 Not FOUND!\r\nServer: Marks server\r\nConnection: close\r\nContent-Type: text/html\r\nDate:%s\r\n\r\n'%(current_date)
+            else:
+                response2 = 'HTTP/1.1 404 Not FOUND!\r\nServer: Marks server\r\nConnection: close\r\nDate:%s\r\n\r\n'%(current_date)
+
+            self.request.sendall(bytearray(response2,'utf-8'))
+            
+
+    def handle_405(self,request_type):
+        if request_type != 'GET':
+            response2 =  'HTTP/1.1 405 Method Not Allowed\r\n\r\n' 
+            self.request.sendall(bytearray(response2,'utf-8')) 
+
+
+
+       
+
+    
+
+
     
     def handle(self):
-        self.data = self.request.recv(1024).strip()
+        self.data = self.request.recv(1024).strip()  
         print ("Got a request of: %s\n" % self.data)
-        self.request.sendall(bytearray("OK",'utf-8'))
+        split_list = self.data.decode().split('\n')
+        filename = split_list[0].split()[1]
+        requestname = split_list[0].split()[0]
+        
+        self.handle_405(requestname)
+        self.get_html(filename)
+
+        
+        
+        
+
+  
+
+
 
 if __name__ == "__main__":
     HOST, PORT = "localhost", 8080
